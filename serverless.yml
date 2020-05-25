@@ -8,6 +8,8 @@ provider:
 functions:
   app:
     handler: app/app.handler
+    # Reserving concurrency to make sure lambda is throttled  
+    reservedConcurrency: 3
     events: 
       - http: 
           path: /
