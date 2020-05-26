@@ -17,6 +17,11 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+      Resource:
+        - Fn::GetAtt: [ doSomethingQueue, Arn ]
 functions:
   app:
     handler: app/app.handler
@@ -25,13 +30,38 @@ functions:
     reservedConcurrency: 3
     events:
       - http:
-          path: /
+          path: /api/
           method: ANY
           cors: true
       - http:
-          path: /{proxy+}
+          path: /api/{proxy+}
           method: ANY
           cors: true
+
+  queue:
+    handlers: app/app.asyncUserAdd
+    events:
+      - http:
+          path: /api2/
+          method: POST
+          cors: true
+
+
+  receiver:
+    handler: app/app.someQueueReciver
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - doSomethingQueue
+              - Arn
+      # - s3:
+      #     bucket: bucket
+      #     event: s3:ObjectCreated:*
+      #     rules:
+      #       - prefix: uploads/
+      #       - suffix: .jpg
+
 
 resources:
   Resources:
@@ -47,3 +77,8 @@ resources:
             KeyType: HASH
         # Set the capacity to auto-scale
         BillingMode: PAY_PER_REQUEST
+
+    doSomethingQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: doSomethingQueue
