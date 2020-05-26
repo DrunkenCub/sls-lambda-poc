@@ -6,12 +6,15 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "aws-sdk": "^2.683.0",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
+    "email-validator": "^2.0.4",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
     "morgan": "~1.9.1",
-    "serverless-http": "^2.5.0"
+    "serverless-http": "^2.5.0",
+    "uuid": "^8.1.0"
   }
 }

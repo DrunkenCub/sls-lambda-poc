@@ -5,17 +5,45 @@ provider:
   stage: dev
   region: us-east-1
   memorySize: 128
+  environment:
+    USERS_TABLE: 'users-table-${self:provider.stage}'
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "*"
 functions:
   app:
     handler: app/app.handler
-    # Reserving concurrency to make sure lambda is throttled  
+    memorySize: 128
+    # Reserving concurrency to make sure lambda is throttled
     reservedConcurrency: 3
-    events: 
-      - http: 
+    events:
+      - http:
           path: /
           method: ANY
           cors: true
-      - http: 
+      - http:
           path: /{proxy+}
           method: ANY
           cors: true
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USERS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        # Set the capacity to auto-scale
+        BillingMode: PAY_PER_REQUEST
