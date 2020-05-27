@@ -6,6 +6,9 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+const uuid = require('uuid');
+const AWS = require('aws-sdk');
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
@@ -43,77 +46,33 @@ app.use(function (err, req, res, next) {
 // module.exports = app;
 module.exports.handler = serverless(app);
 
+const USERS_TABLE = process.env.USERS_TABLE;
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-import { SQS } from 'aws-sdk';
-
-const sqs = new SQS();
-
-const asyncUserAdd = async (event, context) => {
-
-  let statusCode = 200;
-  let message;
-
-  if (!event.body) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: 'No body was found',
-      }),
-    };
-  }
-
-  const region = context.invokedFunctionArn.split(':')[3];
-  const accountId = context.invokedFunctionArn.split(':')[4];
-  const queueName = 'receiverQueue';
-
-  const queueUrl = `https://sqs.${region}.amazonaws.com/${accountId}/${queueName}`;
-
-  const {email, name} = event.body;
-  const uuid = require('uuid');
-
-  const body = {
-    userId: uuid.v1().toString(),
-    email: email,
-    name: name
-  }
-  try {
-    await sqs.sendMessage({
-      QueueUrl: queueUrl,
-      MessageBody: body,
-      MessageAttributes: {
-        AttributeNameHere: {
-          StringValue: 'Some Attribute Value Here',
-          DataType: 'String',
-        },
-      },
-    }).promise();
-
-    message = 'User create message placed in the Queue!';
-
-  } catch (error) {
-    console.log(error);
-    message = error;
-    statusCode = 500;
-  }
-
-  return {
-    statusCode,
-    body: JSON.stringify({
-      message,
-    }),
-  };
-
-};
-
-
-module.exports.asyncUserAdd = serverless(asyncUserAdd);
-
-module.exports.someQueueReciver = async (event) => {
+module.exports.someQueueReciver = (event) => {
   try {
     for (const record of event.Records) {
-      const messageAttributes = record.messageAttributes;
-      console.log('Message Attributtes -->  ', messageAttributes.AttributeNameHere.stringValue);
-      console.log('Message Body -->  ', record.body);
+      const userId = uuid.v1().toString();
+      console.log('Message Body:  ', record.body);
+      const user = JSON.parse(record.body);
+      const params = {
+        TableName: USERS_TABLE,
+        Item: {
+          userId: userId,
+          email: user.email,
+          name: user.name,
+        },
+      };
+
+      console.log(params);
+
+      dynamoDb.put(params, (error) => {
+        if (error) {
+          console.log(error);
+          console.log('Could not create user');
+        }
+        console.log('user created');
+      });
     }
   } catch (err) {
     console.log(err);

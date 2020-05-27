@@ -7,6 +7,7 @@ provider:
   memorySize: 128
   environment:
     USERS_TABLE: 'users-table-${self:provider.stage}'
+    QUEUE_NAME: doSomethingQueue
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -30,22 +31,13 @@ functions:
     reservedConcurrency: 3
     events:
       - http:
-          path: /api/
+          path: /
           method: ANY
           cors: true
       - http:
-          path: /api/{proxy+}
+          path: /{proxy+}
           method: ANY
           cors: true
-
-  queue:
-    handlers: app/app.asyncUserAdd
-    events:
-      - http:
-          path: /api2/
-          method: POST
-          cors: true
-
 
   receiver:
     handler: app/app.someQueueReciver
