@@ -1,6 +1,6 @@
 # Demo with ExpressJS, Serverless Framework, Lambda, DynamoDB and SQS
 
-Sample project which illustrates Express, Serverless Framework, Lambda, DynamoDB and SQS working together.
+Sample project which illustrates how Express, Serverless Framework, Lambda, DynamoDB and SQS working together.
 
 
 # Prerequisites
