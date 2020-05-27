@@ -7,6 +7,7 @@ provider:
   memorySize: 128
   environment:
     USERS_TABLE: 'users-table-${self:provider.stage}'
+    QUEUE_NAME: doSomethingQueue
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -17,6 +18,11 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+      Resource:
+        - Fn::GetAtt: [ doSomethingQueue, Arn ]
 functions:
   app:
     handler: app/app.handler
@@ -33,6 +39,22 @@ functions:
           method: ANY
           cors: true
 
+  receiver:
+    handler: app/app.someQueueReciver
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - doSomethingQueue
+              - Arn
+      # - s3:
+      #     bucket: bucket
+      #     event: s3:ObjectCreated:*
+      #     rules:
+      #       - prefix: uploads/
+      #       - suffix: .jpg
+
+
 resources:
   Resources:
     UsersTable:
@@ -47,3 +69,8 @@ resources:
             KeyType: HASH
         # Set the capacity to auto-scale
         BillingMode: PAY_PER_REQUEST
+
+    doSomethingQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: doSomethingQueue
